@@ -34,3 +34,16 @@ Icon
 # Files that might appear on external disk
 .Spotlight-V100
 .Trashes
+
+# ignore visual studio
+*.config
+*.cs
+*.sln
+*.suo
+*.csproj
+*.vbproj
+*.fsproj
+*.dbproj
+bin/
+obj/
+Properties/
