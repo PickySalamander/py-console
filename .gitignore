@@ -37,7 +37,6 @@ Icon
 
 # ignore visual studio
 *.config
-*.cs
 *.sln
 *.suo
 *.csproj
