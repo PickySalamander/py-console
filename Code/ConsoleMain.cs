@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -43,44 +44,59 @@ namespace CodeProject.CodeConsole {
 			var setup = new AppDomainSetup();
 			setup.ApplicationBase = AppDomain.CurrentDomain.BaseDirectory;
 
-			var ps = new PermissionSet(PermissionState.None);
-			ps.AddPermission(new SecurityPermission(SecurityPermissionFlag.Execution));
-			ps.AddPermission(new FileIOPermission(FileIOPermissionAccess.Read | FileIOPermissionAccess.PathDiscovery, AppDomain.CurrentDomain.BaseDirectory));
+			PermissionSet permSet = new PermissionSet(PermissionState.None);
+			permSet.AddPermission(new SecurityPermission(SecurityPermissionFlag.Execution));
 
-			var TrustedAssemblies = new Type[] 
-            {
-                typeof(DateTime),
-                typeof(Uri),
-                typeof(IronPython.BytesConversionAttribute),
-                typeof(IronPython.Modules.ArrayModule),
-                typeof(Enumerable)
-            }.Select(t => t.Assembly.Evidence.GetHostEvidence<StrongName>()).ToArray();
+			StrongName[] TrustedAssemblies = new StrongName[] {
+                //GetStrongName(typeof(Enumerable))
+            };
 
-			sandboxDomain = AppDomain.CreateDomain("Sandbox", null, setup, ps, TrustedAssemblies);
+			sandboxDomain = AppDomain.CreateDomain("Sandbox", null, setup, permSet);
+		}
+
+		private StrongName GetStrongName(Type t) {
+			return t.Assembly.Evidence.GetHostEvidence<StrongName>();
 		}
 
 		private void RunLoop() {
+			RunCode("import System\nfrom System.Collections import *\nh = Hashtable()\n");
+
 			while(true) {
 				string code = Console.ReadLine();
 
-				try {
-					try {
-						ScriptSource source = engine.CreateScriptSourceFromString(code, SourceCodeKind.AutoDetect);
-						CompiledCode compiled = source.Compile();
+				RunCode(code);
 
-						// Executes in the scope of Python
-						object result = compiled.Execute(scope);
-						if(result != null) {
-							Console.WriteLine(result.ToString());
-						}
-					}
-					catch(Exception e) {
-						handlePyException(e);
+				/*
+				 * Python code that works:
+				 * 
+				 * import System
+				 * from System.Collections import *
+				 * h = Hashtable()
+				 * h["a"] = "IronPython"
+				 * h["b"] = "Tutorial"
+				 * for e in h: print e.Key, ":", e.Value
+				 */
+			}
+		}
+
+		private void RunCode(string code) {
+			try {
+				try {
+					ScriptSource source = engine.CreateScriptSourceFromString(code, SourceCodeKind.AutoDetect);
+					CompiledCode compiled = source.Compile();
+
+					// Executes in the scope of Python
+					object result = compiled.Execute(scope);
+					if(result != null) {
+						Console.WriteLine(result.ToString());
 					}
 				}
 				catch(Exception e) {
-					Console.WriteLine("Failed to process console command" + e);
+					handlePyException(e);
 				}
+			}
+			catch(Exception e) {
+				Console.WriteLine("Failed to process console command" + e);
 			}
 		}
 
